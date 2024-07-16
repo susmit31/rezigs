@@ -27,7 +27,7 @@ const Node = struct {
 		const substr = string[pos..];
 		var res: bool = true;
 		if (self.variety == .TXT_NODE){
-			const atom = AtomicRegex{.pattern = self.content};
+			const atom = AtomicRegex.init(self.content);
 			return atom.match(substr, pos)
 		} else {
 			for (self.children)|child|{
@@ -67,7 +67,9 @@ const AtomicRegex = struct {
 			.pattern = pattern
 		};
 	}
+	
 	pub fn match(self: AtomicRegex, string: []const u8, pos_ptr: *i32) bool {
-		return true;
+		const tomatch = string[pos_ptr.*..];
+		if (std.mem.eql(u8, self.pattern, ".") 
 	}
 }
