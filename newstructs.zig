@@ -10,15 +10,17 @@ const Node = struct {
 	content: []const u8,
 	parent: ?Node,
 	children: []Node,
-	qtifier: ?[]const u8,
+	lower_lim: i32 = 1,
+	upper_lim: i32 = 1,
 
-	pub fn init(variety: NodeType, content: []const u8, parent: ?Node, children: []Node, qtifier: ?[]const u8) Node{
+	pub fn init(variety: NodeType, content: []const u8, parent: ?Node, children: []Node, llim:?i32, ulim: ?i32) Node{
 		return Node{
 			.variety = variety,
 			.content = content,
 			.parent = parent,
 			.children = children,
-			.qtifier = qtifier
+			.lower_lim = llim orelse 1,
+			.upper_lim = ulim orelse 1
 		};
 	}
 
@@ -27,7 +29,7 @@ const Node = struct {
 		const substr = string[pos..];
 		var res: bool = true;
 		if (self.variety == .TXT_NODE){
-			const atom = AtomicRegex.init(self.content);
+			const atom = AtomicRegex.init(self.content, self.qtifier);
 			return atom.match(substr, pos)
 		} else {
 			for (self.children)|child|{
@@ -36,7 +38,7 @@ const Node = struct {
 			return res;
 		}
 	}
-}
+};
 
 const ParsedTree = struct {
 	pattern: []const u8,
@@ -57,19 +59,50 @@ const ParsedTree = struct {
 
 		return self.root.match(string, pos_ptr);
 	}
-}
+};
 
 const AtomicRegex = struct {
 	pattern: []const u8,
-
-	pub fn init(pattern: []const u8) AtomicRegex{
+	lower_lim: usize = 1,
+	upper_lim: usize = 1,
+	
+	pub fn init(pattern: []const u8, llim: ?i32, ulim: ?i32) AtomicRegex{
 		return AtomicRegex{
-			.pattern = pattern
+			.pattern = pattern,
+			.lower_lim = llim orelse 1,
+			.upper_lim = ulim orelse 1
 		};
 	}
 	
-	pub fn match(self: AtomicRegex, string: []const u8, pos_ptr: *i32) bool {
-		const tomatch = string[pos_ptr.*..];
-		if (std.mem.eql(u8, self.pattern, ".") 
+	pub fn match(self: AtomicRegex, string: []const u8, pos_ptr: *usize) bool {
+		var patcount: i32 = 0;
+		if (std.mem.eql(u8, self.pattern, ".")){
+			while (pos_ptr.* < string.len){
+				for (0..self.pattern.len) |_|{
+					if (string[pos_ptr.*] != '\n'){
+						pos_ptr.* += 1;
+					} else break;
+				}
+				patcount += 1;
+			}
+		} else {
+			var cursor = pos_ptr.*;
+
+			outer: while (cursor < string.len){
+				for (0..self.pattern.len) |i|{
+					if (string[cursor] != self.pattern[i]) {
+						break :outer;
+					} else {
+						cursor += 1;
+					}
+					patcount += 1;
+				}
+			}
+		}
+
+		if (patcount <= self.upper_lim and patcount >= self.lower_lim){
+			return true;
+		}
+		return false;
 	}
-}
+};
