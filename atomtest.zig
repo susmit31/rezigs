@@ -11,7 +11,7 @@ pub fn main() !void{
 
 	const atom1 = AtomicRegex.init(pat1, null, MAX_INT);
 	const atom2 = AtomicRegex.init(pat2, 2, 5);
-	const atom3 = AtomicRegex.init(pat3, 0, 3);
+	const atom3 = AtomicRegex.init(pat3, 1, 3);
 	const atoms = [3]AtomicRegex{atom1, atom2, atom3};
 
 	var res: bool = undefined;
@@ -61,13 +61,12 @@ const AtomicRegex = struct {
 
 			outer: while (cursor < string.len){
 				for (0..self.pattern.len) |i|{
+					cursor += 1;
 					if (string[cursor] != self.pattern[i]) {
 						break :outer;
-					} else {
-						cursor += 1;
 					}
-					patcount += 1;
 				}
+				patcount += 1;
 			}
 		}
 

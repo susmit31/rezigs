@@ -90,10 +90,9 @@ const AtomicRegex = struct {
 
 			outer: while (cursor < string.len){
 				for (0..self.pattern.len) |i|{
+					cursor += 1;
 					if (string[cursor] != self.pattern[i]) {
 						break :outer;
-					} else {
-						cursor += 1;
 					}
 					patcount += 1;
 				}
