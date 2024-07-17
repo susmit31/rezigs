@@ -66,7 +66,7 @@ const AtomicRegex = struct {
 	lower_lim: usize = 1,
 	upper_lim: usize = 1,
 	
-	pub fn init(pattern: []const u8, llim: ?i32, ulim: ?i32) AtomicRegex{
+	pub fn init(pattern: []const u8, llim: ?usize, ulim: ?usize) AtomicRegex{
 		return AtomicRegex{
 			.pattern = pattern,
 			.lower_lim = llim orelse 1,
@@ -76,29 +76,29 @@ const AtomicRegex = struct {
 	
 	pub fn match(self: AtomicRegex, string: []const u8, pos_ptr: *usize) bool {
 		var patcount: i32 = 0;
+		var cursor = pos_ptr.*;
 		if (std.mem.eql(u8, self.pattern, ".")){
-			while (pos_ptr.* < string.len){
+			while (cursor < string.len){
 				for (0..self.pattern.len) |_|{
 					if (string[pos_ptr.*] != '\n'){
-						pos_ptr.* += 1;
+						cursor += 1;
 					} else break;
 				}
 				patcount += 1;
 			}
 		} else {
-			var cursor = pos_ptr.*;
 
 			outer: while (cursor < string.len){
 				for (0..self.pattern.len) |i|{
-					cursor += 1;
 					if (string[cursor] != self.pattern[i]) {
 						break :outer;
 					}
-					patcount += 1;
+					cursor += 1;
 				}
+				patcount += 1;
 			}
 		}
-
+//		std.debug.print("====Patcount from {s}: {d}====\n====Cursor loc: {d}====\n",.{self.pattern, patcount, cursor});
 		if (patcount <= self.upper_lim and patcount >= self.lower_lim){
 			return true;
 		}

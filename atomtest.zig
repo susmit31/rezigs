@@ -21,11 +21,15 @@ pub fn main() !void{
 	const val2 = ptr.* + 2;
 
 	try stdout.writer().print("Value: {d}, Value-2: {d}\n", .{value, val2});
+
+	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+	const alloc = gpa.allocator();
 	
 	for (strarr) |str| {
 		for (atoms) |atom| {
-			var pos: usize = 0;
-			res = atom.match(str, &pos);
+			const pos_ptr = try alloc.create(usize);
+			pos_ptr.* = 0;
+			res = atom.match(str, pos_ptr);
 
 			try stdout.writer().print("Testing pattern \"{s}[{d}, {d}]\" against string \"{s}\"... Result: \"{}\"\n", .{atom.pattern, atom.lower_lim, atom.upper_lim, str, res});
 		}
@@ -47,29 +51,29 @@ const AtomicRegex = struct {
 	
 	pub fn match(self: AtomicRegex, string: []const u8, pos_ptr: *usize) bool {
 		var patcount: i32 = 0;
+		var cursor = pos_ptr.*;
 		if (std.mem.eql(u8, self.pattern, ".")){
-			while (pos_ptr.* < string.len){
+			while (cursor < string.len){
 				for (0..self.pattern.len) |_|{
 					if (string[pos_ptr.*] != '\n'){
-						pos_ptr.* += 1;
+						cursor += 1;
 					} else break;
 				}
 				patcount += 1;
 			}
 		} else {
-			var cursor = pos_ptr.*;
 
 			outer: while (cursor < string.len){
 				for (0..self.pattern.len) |i|{
-					cursor += 1;
 					if (string[cursor] != self.pattern[i]) {
 						break :outer;
 					}
+					cursor += 1;
 				}
 				patcount += 1;
 			}
 		}
-
+		std.debug.print("====Patcount from {s}: {d}====\n====Cursor loc: {d}====\n",.{self.pattern, patcount, cursor});
 		if (patcount <= self.upper_lim and patcount >= self.lower_lim){
 			return true;
 		}
